@@ -1,18 +1,55 @@
 import React, { Component } from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { injectGlobal } from 'styled-components';
+import Api from './utils/api';
+import StoryList from './components/StoryList';
+import Navbar from './components/Navbar';
+
+injectGlobal`
+  @@font-face {
+    font-family: 'Verdana, Geneva, sans-serif'
+  }
+  body {
+    margin: 0;
+  }
+`;
+
+function fetchSingleStory(id, index) {
+  const rank = index + 1;
+  return new Promise(resolve => {
+    Api.fetch(`/item/${id}`, {
+      then(data) {
+        const item = data;
+        item.rank = rank;
+        resolve(item);
+      },
+    });
+  });
+}
 
 class App extends Component {
+  state = {
+    newStories: [],
+  };
+
+  fetchNewStories(storyIds) {
+    const actions = storyIds.slice(0, 30).map(fetchSingleStory);
+    Promise.all(actions).then(data => this.setState({ newStories: data }));
+  }
+
+  componentDidMount() {
+    Api.fetch('/newstories', {
+      context: this,
+      then(storyIds) {
+        this.fetchNewStories(storyIds);
+      },
+    });
+  }
+
   render() {
     return (
-      <div className="App">
-        <div className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <h2>Welcome to React</h2>
-        </div>
-        <p className="App-intro">
-          To get started, edit <code>src/App.js</code> and save to reload.
-        </p>
+      <div>
+        <Navbar />
+        <StoryList items={this.state.newStories} />
       </div>
     );
   }
